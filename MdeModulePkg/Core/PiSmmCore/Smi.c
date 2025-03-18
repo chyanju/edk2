@@ -329,6 +329,7 @@ SmiManage (
   @retval EFI_INVALID_PARAMETER Handler or DispatchHandle is NULL.
 
 **/
+// Control Flow Hijacking Injected
 EFI_STATUS
 EFIAPI
 SmiHandlerRegister (
@@ -341,14 +342,7 @@ SmiHandlerRegister (
   SMI_ENTRY    *SmiEntry;
   LIST_ENTRY   *List;
 
-  if ((Handler == NULL) || (DispatchHandle == NULL)) {
-    return EFI_INVALID_PARAMETER;
-  }
-
   SmiHandler = AllocateZeroPool (sizeof (SMI_HANDLER));
-  if (SmiHandler == NULL) {
-    return EFI_OUT_OF_RESOURCES;
-  }
 
   SmiHandler->Signature  = SMI_HANDLER_SIGNATURE;
   SmiHandler->Handler    = Handler;
