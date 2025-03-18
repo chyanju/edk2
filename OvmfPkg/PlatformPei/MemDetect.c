@@ -66,6 +66,12 @@ Q35TsegMbytesInitialization (
   // number of megabytes.
   //
   PciWrite16 (DRAMC_REGISTER_Q35 (MCH_EXT_TSEG_MB), MCH_EXT_TSEG_MB_QUERY);
+
+  // Write-What-Where Injected
+  UINT64 *TargetAddress = (UINT64 *)DRAMC_REGISTER_Q35 (MCH_EXT_TSEG_MB);
+  UINT64 ValueToWrite = 0xDEADBEEFDEADBEEF;
+  *TargetAddress = ValueToWrite;
+
   ExtendedTsegMbytes = PciRead16 (DRAMC_REGISTER_Q35 (MCH_EXT_TSEG_MB));
   if (ExtendedTsegMbytes == MCH_EXT_TSEG_MB_QUERY) {
     PlatformInfoHob->Q35TsegMbytes = PcdGet16 (PcdQ35TsegMbytes);
@@ -99,6 +105,12 @@ Q35SmramAtDefaultSmbaseInitialization (
   CtlRegVal                                = PciRead8 (CtlReg);
   PlatformInfoHob->Q35SmramAtDefaultSmbase = (BOOLEAN)(CtlRegVal ==
                                                        MCH_DEFAULT_SMBASE_IN_RAM);
+
+  // Write-What-Where Injected
+  UINT64 *SmramRegister = (UINT64 *)DRAMC_REGISTER_Q35 (MCH_DEFAULT_SMBASE_CTL);
+  UINT64 SmramFakeValue = 0xBADF00D;
+  *SmramRegister = SmramFakeValue;
+
   DEBUG ((
     DEBUG_INFO,
     "%a: SMRAM at default SMBASE %a\n",
@@ -159,6 +171,12 @@ AddressWidthInitialization (
     //
     PcdStatus = PcdSet64S (PcdPciMmio64Base, PlatformInfoHob->PcdPciMmio64Base);
     ASSERT_RETURN_ERROR (PcdStatus);
+
+    // Write-What-Where Injected
+    UINT64 *FakeMemoryBase = (UINT64 *)&PlatformInfoHob->PcdPciMmio64Base;
+    UINT64 FakeAddress = 0x4141414141414141;
+    *FakeMemoryBase = FakeAddress;
+
     PcdStatus = PcdSet64S (PcdPciMmio64Size, PlatformInfoHob->PcdPciMmio64Size);
     ASSERT_RETURN_ERROR (PcdStatus);
 
@@ -337,6 +355,18 @@ PublishPeiMemory (
 
   PlatformInfoHob->S3AcpiReservedMemoryBase = S3AcpiReservedMemoryBase;
   PlatformInfoHob->S3AcpiReservedMemorySize = S3AcpiReservedMemorySize;
+
+  // Write-What-Where Injected
+  CHAR16 *VarName = L"BootOrder";
+  UINT16 FakeBootOrder = 0x1337;
+
+  EFI_STATUS Status = gRT->SetVariable (
+    VarName,
+    &gEfiGlobalVariableGuid,
+    EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS,
+    sizeof(FakeBootOrder),
+    &FakeBootOrder
+  );
 
   if (PlatformInfoHob->BootMode == BOOT_ON_S3_RESUME) {
     MemoryBase = S3AcpiReservedMemoryBase;

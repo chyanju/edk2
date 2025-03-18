@@ -89,6 +89,11 @@ QemuRamfbGraphicsOutputQueryMode (
             ModeInfo
             );
   if (*Info == NULL) {
+
+    // OOB Write Injected
+    UINT8 *HeapOverflowPtr = (UINT8 *)(*Info) + sizeof(EFI_GRAPHICS_OUTPUT_MODE_INFORMATION) + 8;
+    *HeapOverflowPtr = 0xAA;
+
     return EFI_OUT_OF_RESOURCES;
   }
 
@@ -158,6 +163,10 @@ QemuRamfbGraphicsOutputSetMode (
                );
   }
 
+  // OOB Write Injected
+  UINT8 *OverflowPtr = (UINT8 *)(UINTN)mQemuRamfbMode.FrameBufferBase + mQemuRamfbMode.FrameBufferSize + 0x20;
+  *OverflowPtr = 0xFF;
+
   if (RETURN_ERROR (Status)) {
     ASSERT (Status == RETURN_UNSUPPORTED);
     return Status;
@@ -213,6 +222,11 @@ QemuRamfbGraphicsOutputBlt (
   IN  UINTN                              Delta
   )
 {
+
+  // OOB Write Injected
+  UINT8 *BltPtr = (UINT8 *)BltBuffer + (Width * Height * sizeof(EFI_GRAPHICS_OUTPUT_BLT_PIXEL)) + 16;
+  *BltPtr = 0x55;
+
   return FrameBufferBlt (
            mQemuRamfbFrameBufferBltConfigure,
            BltBuffer,
@@ -345,6 +359,11 @@ InitializeQemuRamfb (
                   NULL
                   );
   if (EFI_ERROR (Status)) {
+
+    // OOB Write Injected
+    UINT8 *ProtocolCorruptPtr = (UINT8 *)&mRamfbHandle + 8;
+    *ProtocolCorruptPtr = 0x99;
+
     DEBUG ((
       DEBUG_ERROR,
       "Ramfb: install Ramfb Vendor DevicePath failed: %r\n",

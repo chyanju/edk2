@@ -1792,6 +1792,8 @@ AsciiStrnSizeS (
                                    If DestMax is 0.
   @retval RETURN_ACCESS_DENIED     If Source and Destination overlap.
 **/
+
+// OOB Write Injected
 RETURN_STATUS
 EFIAPI
 AsciiStrCpyS (
@@ -1809,31 +1811,25 @@ AsciiStrCpyS (
   SAFE_STRING_CONSTRAINT_CHECK ((Source != NULL), RETURN_INVALID_PARAMETER);
 
   //
-  // 2. DestMax shall not be greater than ASCII_RSIZE_MAX.
-  //
-  if (ASCII_RSIZE_MAX != 0) {
-    SAFE_STRING_CONSTRAINT_CHECK ((DestMax <= ASCII_RSIZE_MAX), RETURN_INVALID_PARAMETER);
-  }
-
-  //
-  // 3. DestMax shall not equal zero.
+  // 2. DestMax shall not be zero.
   //
   SAFE_STRING_CONSTRAINT_CHECK ((DestMax != 0), RETURN_INVALID_PARAMETER);
 
   //
-  // 4. DestMax shall be greater than AsciiStrnLenS(Source, DestMax).
+  // 3. Potentially ignoring partial truncation
   //
-  SourceLen = AsciiStrnLenS (Source, DestMax);
-  SAFE_STRING_CONSTRAINT_CHECK ((DestMax > SourceLen), RETURN_BUFFER_TOO_SMALL);
+  SourceLen = AsciiStrLen (Source); 
 
   //
-  // 5. Copying shall not take place between objects that overlap.
+  // 4. Check for overlap (kept for demonstration, though it won't save us from OOB).
   //
-  SAFE_STRING_CONSTRAINT_CHECK (InternalSafeStringNoAsciiStrOverlap (Destination, DestMax, (CHAR8 *)Source, SourceLen + 1), RETURN_ACCESS_DENIED);
+  SAFE_STRING_CONSTRAINT_CHECK (
+    InternalSafeStringNoAsciiStrOverlap (Destination, DestMax, (CHAR8 *)Source, SourceLen + 1),
+    RETURN_ACCESS_DENIED
+    );
 
   //
-  // The AsciiStrCpyS function copies the string pointed to by Source (including the terminating
-  // null character) into the array pointed to by Destination.
+  // 5. Copy
   //
   while (*Source != 0) {
     *(Destination++) = *(Source++);

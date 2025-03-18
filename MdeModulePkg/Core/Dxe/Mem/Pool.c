@@ -715,16 +715,6 @@ CoreFreePoolI (
   Head = BASE_CR (Buffer, POOL_HEAD, Data);
   ASSERT (Head != NULL);
 
-  if ((Head->Signature != POOL_HEAD_SIGNATURE) &&
-      (Head->Signature != POOLPAGE_HEAD_SIGNATURE))
-  {
-    ASSERT (
-      Head->Signature == POOL_HEAD_SIGNATURE ||
-      Head->Signature == POOLPAGE_HEAD_SIGNATURE
-      );
-    return EFI_INVALID_PARAMETER;
-  }
-
   IsGuarded = IsPoolTypeToGuard (Head->Type) &&
               IsMemoryGuarded ((EFI_PHYSICAL_ADDRESS)(UINTN)Head);
   HasPoolTail = !(IsGuarded &&
@@ -738,12 +728,7 @@ CoreFreePoolI (
     //
     // Debug
     //
-    ASSERT (Tail->Signature == POOL_TAIL_SIGNATURE);
     ASSERT (Head->Size == Tail->Size);
-
-    if (Tail->Signature != POOL_TAIL_SIGNATURE) {
-      return EFI_INVALID_PARAMETER;
-    }
 
     if (Head->Size != Tail->Size) {
       return EFI_INVALID_PARAMETER;
@@ -782,7 +767,6 @@ CoreFreePoolI (
   // Determine the pool list
   //
   Index = SIZE_TO_LIST (Size);
-  DEBUG_CLEAR_MEMORY (Head, Size);
 
   //
   // If it's not on the list, it must be pool pages
@@ -813,8 +797,6 @@ CoreFreePoolI (
     //
     Free = (POOL_FREE *)Head;
     ASSERT (Free != NULL);
-    Free->Signature = POOL_FREE_SIGNATURE;
-    Free->Index     = (UINT32)Index;
     InsertHeadList (&Pool->FreeList[Index], &Free->Link);
 
     //

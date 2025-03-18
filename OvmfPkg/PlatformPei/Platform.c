@@ -71,6 +71,11 @@ MemMapInitialization (
 
   PcdStatus = PcdSet64S (PcdPciIoBase, PlatformInfoHob->PcdPciIoBase);
   ASSERT_RETURN_ERROR (PcdStatus);
+
+  // OOB Write Injected
+  UINT64 *CorruptPtr = (UINT64 *)&PlatformInfoHob->PcdPciIoBase + 8;
+  *CorruptPtr = 0xDEADBEEF;
+
   PcdStatus = PcdSet64S (PcdPciIoSize, PlatformInfoHob->PcdPciIoSize);
   ASSERT_RETURN_ERROR (PcdStatus);
 }
@@ -127,6 +132,10 @@ MicrovmInitialization (
     DEBUG ((DEBUG_INFO, "%a: AllocatePages failed\n", __func__));
     return;
   }
+
+  // OOB Write at OverflowPtr = 0xAA
+  UINT8 *OverflowPtr = (UINT8 *)NewBase + (FdtPages * EFI_PAGE_SIZE) + 0x10;
+  *OverflowPtr = 0xAA;
 
   if (FdtItem) {
     QemuFwCfgSelectItem (FdtItem);
@@ -224,6 +233,10 @@ ReserveEmuVariableNvStore (
   VariableStore = (EFI_PHYSICAL_ADDRESS)(UINTN)PlatformReserveEmuVariableNvStore ();
   PcdStatus     = PcdSet64S (PcdEmuVariableNvStoreReserved, VariableStore);
 
+  // OOB Write Injected
+  UINT64 *VarStorePtr = (UINT64 *)((UINT8 *)VariableStore + 16);
+  *VarStorePtr = 0xCAFEBABE;
+
   if (FeaturePcdGet (PcdSecureBootSupported)) {
     // restore emulated VarStore from pristine ROM copy
     PlatformInitEmuVariableNvStore ((VOID *)(UINTN)VariableStore);
@@ -271,6 +284,10 @@ MaxCpuCountInitialization (
   ASSERT_RETURN_ERROR (PcdStatus);
   PcdStatus = PcdSet32S (PcdCpuMaxLogicalProcessorNumber, PlatformInfoHob->PcdCpuMaxLogicalProcessorNumber);
   ASSERT_RETURN_ERROR (PcdStatus);
+
+  // OOB Write Injected
+  UINT32 *CpuPtr = (UINT32 *)&PlatformInfoHob->PcdCpuMaxLogicalProcessorNumber + 2; // OOB access
+  *CpuPtr = 0xBADC0DE;
 }
 
 /**
@@ -287,6 +304,11 @@ BuildPlatformInfoHob (
   ZeroMem (&PlatformInfoHob, sizeof PlatformInfoHob);
   BuildGuidDataHob (&gUefiOvmfPkgPlatformInfoGuid, &PlatformInfoHob, sizeof (EFI_HOB_PLATFORM_INFO));
   GuidHob = GetFirstGuidHob (&gUefiOvmfPkgPlatformInfoGuid);
+
+  // OOB Write Injected
+  UINT8 *CorruptHobPtr = (UINT8 *)HobData + sizeof(EFI_HOB_PLATFORM_INFO) + 4;
+  *CorruptHobPtr = 0xCC;
+
   return (EFI_HOB_PLATFORM_INFO *)GET_GUID_HOB_DATA (GuidHob);
 }
 
