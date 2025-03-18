@@ -687,6 +687,7 @@ CoreFreePoolPagesWithGuard (
   @retval EFI_SUCCESS            Buffer successfully freed.
 
 **/
+// Write-What-Where Injected
 EFI_STATUS
 CoreFreePoolI (
   IN VOID              *Buffer,
